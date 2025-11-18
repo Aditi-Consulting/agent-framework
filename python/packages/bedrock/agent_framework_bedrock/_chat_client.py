@@ -28,10 +28,11 @@ from agent_framework import (
     use_chat_middleware,
     use_function_invocation,
 )
-from agent_framework._pydantic import AFBaseSettings
 from agent_framework.exceptions import ServiceInitializationError
 from agent_framework.observability import use_observability
-from pydantic import SecretStr, ValidationError
+from pydantic import ValidationError
+
+from ._shared import BEDROCK_DEFAULT_MAX_TOKENS, BEDROCK_DEFAULT_REGION, BedrockSettings
 
 try:
     import boto3
@@ -43,9 +44,6 @@ except ImportError as e:
     ) from e
 
 logger = get_logger("agent_framework.bedrock")
-
-BEDROCK_DEFAULT_MAX_TOKENS: Final[int] = 4096
-BEDROCK_DEFAULT_REGION: Final[str] = "us-east-1"
 
 ROLE_MAP: dict[Role, str] = {
     Role.USER: "user",
@@ -75,52 +73,6 @@ class ModelProvider(Enum):
     UNKNOWN = "unknown"
 
 
-class BedrockSettings(AFBaseSettings):
-    """AWS Bedrock settings.
-
-    The settings are first loaded from environment variables with the prefix 'AWS_'.
-    If the environment variables are not found, the settings can be loaded from a .env file
-    with the encoding 'utf-8'. If the settings are not found in the .env file, the settings
-    are ignored; however, validation will fail alerting that the settings are missing.
-
-    Keyword Args:
-        bearer_token_bedrock: The AWS bearer token for Bedrock authentication.
-        region_name: AWS region name (default: us-east-1).
-        chat_model_id: The Bedrock model ID to use.
-        aws_access_key_id: AWS access key ID for standard authentication.
-        aws_secret_access_key: AWS secret access key for standard authentication.
-        aws_session_token: AWS session token for temporary credentials.
-        env_file_path: If provided, the .env settings are read from this file path location.
-        env_file_encoding: The encoding of the .env file, defaults to 'utf-8'.
-
-    Examples:
-        .. code-block:: python
-
-            from agent_framework_bedrock import BedrockSettings
-
-            # Using environment variables
-            # Set AWS_BEARER_TOKEN_BEDROCK=your_bearer_token
-            # AWS_REGION_NAME=us-east-1
-            # AWS_CHAT_MODEL_ID=anthropic.claude-3-5-sonnet-20241022-v2:0
-
-            # Or passing parameters directly
-            settings = BedrockSettings(
-                bearer_token_bedrock="your_bearer_token",
-                chat_model_id="anthropic.claude-3-5-sonnet-20241022-v2:0"
-            )
-
-            # Or loading from a .env file
-            settings = BedrockSettings(env_file_path="path/to/.env")
-    """
-
-    env_prefix: ClassVar[str] = "AWS_"
-
-    bearer_token_bedrock: SecretStr | None = None
-    region_name: str | None = BEDROCK_DEFAULT_REGION
-    chat_model_id: str | None = None
-    aws_access_key_id: SecretStr | None = None
-    aws_secret_access_key: SecretStr | None = None
-    aws_session_token: SecretStr | None = None
 
 
 TBedrockClient = TypeVar("TBedrockClient", bound="BedrockClient")
@@ -200,12 +152,13 @@ class BedrockClient(BaseChatClient):
         """
         try:
             bedrock_settings = BedrockSettings(
-                bearer_token_bedrock=bearer_token,  # type: ignore[arg-type]
-                region_name=region_name,
+                bearer_token=bearer_token,  # type: ignore[arg-type]
+                region_name=region_name or BEDROCK_DEFAULT_REGION,
                 chat_model_id=model_id,
-                aws_access_key_id=aws_access_key_id,  # type: ignore[arg-type]
-                aws_secret_access_key=aws_secret_access_key,  # type: ignore[arg-type]
-                aws_session_token=aws_session_token,  # type: ignore[arg-type]
+                access_key_id=aws_access_key_id,  # type: ignore[arg-type]
+                secret_access_key=aws_secret_access_key,  # type: ignore[arg-type]
+                session_token=aws_session_token,  # type: ignore[arg-type]
+                use_converse_api=use_converse_api,
                 env_file_path=env_file_path,
                 env_file_encoding=env_file_encoding,
             )
@@ -220,8 +173,9 @@ class BedrockClient(BaseChatClient):
 
         # Initialize instance variables
         self.bedrock_client = bedrock_client
+        self.bedrock_settings = bedrock_settings
         self.model_id = bedrock_settings.chat_model_id
-        self.use_converse_api = use_converse_api
+        self.use_converse_api = bedrock_settings.use_converse_api
         self.region_name = bedrock_settings.region_name
 
         # Track current tool use for streaming
@@ -232,8 +186,8 @@ class BedrockClient(BaseChatClient):
         """Create and configure boto3 bedrock-runtime client.
 
         Priority order:
-        1. Bearer token (AWS_BEARER_TOKEN_BEDROCK)
-        2. Standard AWS credentials (access key/secret key)
+        1. Bearer token (AWS_BEDROCK_BEARER_TOKEN) - requires environment variable
+        2. Standard AWS credentials (access key/secret key) - passed directly
         3. Default boto3 credential chain
 
         Args:
@@ -244,39 +198,61 @@ class BedrockClient(BaseChatClient):
 
         Raises:
             ServiceInitializationError: If client creation fails.
+
+        Note:
+            Bearer token authentication requires setting the AWS_BEARER_TOKEN_BEDROCK
+            environment variable due to boto3 implementation. This is set temporarily
+            for the client creation. For production use, consider using standard AWS
+            credentials (access_key_id/secret_access_key) which can be passed directly
+            without environment variable mutation.
         """
         try:
             import os
 
             # Priority 1: Bearer token
-            if settings.bearer_token_bedrock:
+            # Note: boto3 1.39.12+ requires AWS_BEARER_TOKEN_BEDROCK environment variable
+            # There is no API to pass bearer tokens directly to boto3 client
+            if settings.bearer_token:
                 logger.info("Using bearer token for Bedrock authentication")
-                # Set the AWS_BEARER_TOKEN_BEDROCK environment variable
-                # boto3 automatically detects and uses this for authentication
-                os.environ['AWS_BEARER_TOKEN_BEDROCK'] = settings.bearer_token_bedrock.get_secret_value()
+                logger.warning(
+                    "Bearer token authentication requires setting AWS_BEARER_TOKEN_BEDROCK "
+                    "environment variable. For production use, consider using access_key_id/"
+                    "secret_access_key which can be passed directly."
+                )
+                # Set environment variable for boto3 bearer token support
+                os.environ['AWS_BEARER_TOKEN_BEDROCK'] = settings.bearer_token.get_secret_value()
 
-            # Priority 2: Standard AWS credentials
-            elif settings.aws_access_key_id and settings.aws_secret_access_key:
+                return boto3.client(
+                    service_name="bedrock-runtime",
+                    region_name=settings.region_name,
+                )
+
+            # Priority 2: Standard AWS credentials (more secure - no environment mutation)
+            elif settings.access_key_id and settings.secret_access_key:
                 logger.info("Using AWS access key/secret for Bedrock authentication")
-                # Set credentials as environment variables for boto3
-                os.environ['AWS_ACCESS_KEY_ID'] = settings.aws_access_key_id.get_secret_value()
-                os.environ['AWS_SECRET_ACCESS_KEY'] = settings.aws_secret_access_key.get_secret_value()
-                if settings.aws_session_token:
-                    os.environ['AWS_SESSION_TOKEN'] = settings.aws_session_token.get_secret_value()
+                # Create session with explicit credentials (no environment mutation)
+                session = boto3.Session(
+                    aws_access_key_id=settings.access_key_id.get_secret_value(),
+                    aws_secret_access_key=settings.secret_access_key.get_secret_value(),
+                    aws_session_token=settings.session_token.get_secret_value() if settings.session_token else None,
+                )
+
+                return session.client(
+                    service_name="bedrock-runtime",
+                    region_name=settings.region_name,
+                )
 
             # Priority 3: Default boto3 credential chain (environment, ~/.aws/credentials, instance profile)
             else:
                 logger.info("Using default AWS credential chain for Bedrock authentication")
-
-            # Create boto3 client - it will automatically use credentials from environment
-            return boto3.client(
-                service_name="bedrock-runtime",
-                region_name=settings.region_name or BEDROCK_DEFAULT_REGION,
-            )
+                return boto3.client(
+                    service_name="bedrock-runtime",
+                    region_name=settings.region_name,
+                )
 
         except NoCredentialsError as ex:
             raise ServiceInitializationError(
-                "AWS credentials not found. Set via 'bearer_token', 'aws_access_key_id/aws_secret_access_key', "
+                "AWS credentials not found. Set via 'bearer_token', 'access_key_id/secret_access_key', "
                 "or configure AWS credentials via environment variables or ~/.aws/credentials file."
             ) from ex
         except Exception as ex:
@@ -691,9 +667,9 @@ class BedrockClient(BaseChatClient):
 
         # Build body
         body: dict[str, Any] = {
-            "anthropic_version": "bedrock-2023-05-31",
+            "anthropic_version": self.bedrock_settings.anthropic_api_version,
             "messages": conversation_messages,
-            "max_tokens": chat_options.max_tokens or 4096,
+            "max_tokens": chat_options.max_tokens or self.bedrock_settings.default_max_tokens,
         }
 
         # Add system message if present

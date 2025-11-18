@@ -41,9 +41,9 @@ print(response.messages[0].text)
 ### Using Environment Variables
 
 Set these environment variables:
-- `AWS_BEARER_TOKEN_BEDROCK`: Your AWS bearer token
-- `AWS_REGION_NAME`: AWS region (default: us-east-1)
-- `AWS_CHAT_MODEL_ID`: Default model ID
+- `AWS_BEDROCK_BEARER_TOKEN`: Your AWS bearer token
+- `AWS_BEDROCK_REGION_NAME`: AWS region (default: us-east-1)
+- `AWS_BEDROCK_CHAT_MODEL_ID`: Default model ID
 
 ```python
 from agent_framework_bedrock import BedrockClient
@@ -141,13 +141,13 @@ All configuration can be done via constructor or environment variables:
 
 ```python
 BedrockClient(
-    bearer_token=None,          # AWS_BEARER_TOKEN_BEDROCK
-    region_name="us-east-1",    # AWS_REGION_NAME
-    model_id=None,              # AWS_CHAT_MODEL_ID
-    use_converse_api=True,      # Use Converse API vs InvokeModel
-    aws_access_key_id=None,     # AWS_ACCESS_KEY_ID
-    aws_secret_access_key=None, # AWS_SECRET_ACCESS_KEY
-    aws_session_token=None,     # AWS_SESSION_TOKEN
+    bearer_token=None,          # AWS_BEDROCK_BEARER_TOKEN
+    region_name="us-east-1",    # AWS_BEDROCK_REGION_NAME
+    model_id=None,              # AWS_BEDROCK_CHAT_MODEL_ID
+    use_converse_api=True,      # AWS_BEDROCK_USE_CONVERSE_API (default: True)
+    aws_access_key_id=None,     # AWS_BEDROCK_ACCESS_KEY_ID
+    aws_secret_access_key=None, # AWS_BEDROCK_SECRET_ACCESS_KEY
+    aws_session_token=None,     # AWS_BEDROCK_SESSION_TOKEN
 )
 ```
 
@@ -193,14 +193,11 @@ Different models have different capabilities. The client automatically detects a
 ## Requirements
 
 - Python 3.10+
-- boto3 >= 1.35.0
-- botocore >= 1.35.0
+- boto3 >= 1.39.12
+- botocore >= 1.39.12
 - agent-framework-core
 
-**Important for Bearer Token Authentication**:
-- boto3 1.39.12+ is **required** for AWS_BEARER_TOKEN_BEDROCK (API key) support
-- If using bearer tokens, ensure you upgrade: `pip install 'boto3>=1.39.12' 'botocore>=1.39.12'`
-- Standard AWS credentials work with boto3 1.35.0+
+**Note**: boto3 1.39.12+ is required for AWS_BEDROCK_BEARER_TOKEN (bearer token/API key) support.
 
 ## License
 

@@ -2,7 +2,8 @@
 
 import importlib.metadata
 
-from ._chat_client import BedrockClient, BedrockSettings
+from ._chat_client import BedrockClient
+from ._shared import BedrockSettings
 
 try:
     __version__ = importlib.metadata.version(__name__)

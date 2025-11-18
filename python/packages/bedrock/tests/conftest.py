@@ -27,9 +27,9 @@ def bedrock_unit_test_env(monkeypatch, exclude_list, override_env_param_dict):  
         override_env_param_dict = {}
 
     env_vars = {
-        "AWS_BEARER_TOKEN_BEDROCK": "test-bearer-token-12345",
-        "AWS_REGION_NAME": "us-east-1",
-        "AWS_CHAT_MODEL_ID": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "AWS_BEDROCK_BEARER_TOKEN": "test-bearer-token-12345",
+        "AWS_BEDROCK_REGION_NAME": "us-east-1",
+        "AWS_BEDROCK_CHAT_MODEL_ID": "anthropic.claude-3-5-sonnet-20241022-v2:0",
     }
 
     env_vars.update(override_env_param_dict)  # type: ignore

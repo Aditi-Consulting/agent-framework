@@ -15,36 +15,36 @@ class TestBedrockSettings:
         """Test BedrockSettings initialization with bearer token."""
         settings = BedrockSettings()
 
-        assert settings.bearer_token_bedrock is not None
-        assert settings.bearer_token_bedrock.get_secret_value() == "test-bearer-token-12345"
+        assert settings.bearer_token is not None
+        assert settings.bearer_token.get_secret_value() == "test-bearer-token-12345"
         assert settings.region_name == "us-east-1"
         assert settings.chat_model_id == "anthropic.claude-3-5-sonnet-20241022-v2:0"
 
     def test_bedrock_settings_init_with_parameters(self):
         """Test BedrockSettings initialization with direct parameters."""
         settings = BedrockSettings(
-            bearer_token_bedrock="custom-token",
+            bearer_token="custom-token",
             region_name="us-west-2",
             chat_model_id="amazon.titan-text-premier-v1:0",
         )
 
-        assert settings.bearer_token_bedrock is not None
-        assert settings.bearer_token_bedrock.get_secret_value() == "custom-token"
+        assert settings.bearer_token is not None
+        assert settings.bearer_token.get_secret_value() == "custom-token"
         assert settings.region_name == "us-west-2"
         assert settings.chat_model_id == "amazon.titan-text-premier-v1:0"
 
     def test_bedrock_settings_with_aws_credentials(self):
         """Test BedrockSettings with standard AWS credentials."""
         settings = BedrockSettings(
-            aws_access_key_id="test-access-key",
-            aws_secret_access_key="test-secret-key",
-            aws_session_token="test-session-token",
+            access_key_id="test-access-key",
+            secret_access_key="test-secret-key",
+            session_token="test-session-token",
         )
 
-        assert settings.aws_access_key_id is not None
-        assert settings.aws_access_key_id.get_secret_value() == "test-access-key"
-        assert settings.aws_secret_access_key is not None
-        assert settings.aws_secret_access_key.get_secret_value() == "test-secret-key"
+        assert settings.access_key_id is not None
+        assert settings.access_key_id.get_secret_value() == "test-access-key"
+        assert settings.secret_access_key is not None
+        assert settings.secret_access_key.get_secret_value() == "test-secret-key"
 
 
 class TestBedrockClientInitialization:

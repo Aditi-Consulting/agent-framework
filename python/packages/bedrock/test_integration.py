@@ -12,8 +12,8 @@ async def test_basic_chat():
 
     # When using bearer tokens (API keys), use cross-region inference profile ARNs
     client = BedrockClient(
-        bearer_token=os.getenv("AWS_BEARER_TOKEN_BEDROCK"),
-        region_name=os.getenv("AWS_REGION_NAME", "us-east-1"),
+        bearer_token=os.getenv("AWS_BEDROCK_BEARER_TOKEN"),
+        region_name=os.getenv("AWS_BEDROCK_REGION_NAME", "us-east-1"),
         model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
 
@@ -50,8 +50,8 @@ async def test_streaming_chat():
 
     # When using bearer tokens (API keys), use cross-region inference profile ARNs
     client = BedrockClient(
-        bearer_token=os.getenv("AWS_BEARER_TOKEN_BEDROCK"),
-        region_name=os.getenv("AWS_REGION_NAME", "us-east-1"),
+        bearer_token=os.getenv("AWS_BEDROCK_BEARER_TOKEN"),
+        region_name=os.getenv("AWS_BEDROCK_REGION_NAME", "us-east-1"),
         model_id="us.anthropic.claude-3-5-sonnet-20241022-v2:0"
     )
 
@@ -81,12 +81,12 @@ async def main():
     print("="*60)
 
     # Check environment
-    if not os.getenv("AWS_BEARER_TOKEN_BEDROCK"):
-        print("❌ AWS_BEARER_TOKEN_BEDROCK not set!")
+    if not os.getenv("AWS_BEDROCK_BEARER_TOKEN"):
+        print("❌ AWS_BEDROCK_BEARER_TOKEN not set!")
         return
 
-    print(f"✅ Bearer token: {os.getenv('AWS_BEARER_TOKEN_BEDROCK')[:20]}...")
-    print(f"✅ Region: {os.getenv('AWS_REGION_NAME', 'us-east-1')}")
+    print(f"✅ Bearer token: {os.getenv('AWS_BEDROCK_BEARER_TOKEN')[:20]}...")
+    print(f"✅ Region: {os.getenv('AWS_BEDROCK_REGION_NAME', 'us-east-1')}")
 
     print("\n" + "="*60)
 
