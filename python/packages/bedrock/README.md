@@ -222,11 +222,11 @@ Different models have different capabilities. The client automatically detects a
 ## Requirements
 
 - Python 3.10+
-- boto3 >= 1.39.12
-- botocore >= 1.39.12
+- boto3 >= 1.40.75
+- botocore >= 1.40.75
 - agent-framework-core
 
-**Note**: boto3 1.39.12+ is required for AWS_BEDROCK_BEARER_TOKEN (bearer token/API key) support.
+**Note**: boto3 1.40.75+ is recommended and tested for reliable AWS_BEDROCK_BEARER_TOKEN (bearer token/API key) support.
 
 ## License
 
