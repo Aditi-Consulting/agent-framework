@@ -142,12 +142,41 @@ All configuration can be done via constructor or environment variables:
 ```python
 BedrockClient(
     bearer_token=None,          # AWS_BEDROCK_BEARER_TOKEN
-    region_name="us-east-1",    # AWS_BEDROCK_REGION_NAME
+    region_name="us-east-1",    # AWS_BEDROCK_REGION_NAME (default: us-east-1)
     model_id=None,              # AWS_BEDROCK_CHAT_MODEL_ID
     use_converse_api=True,      # AWS_BEDROCK_USE_CONVERSE_API (default: True)
+    default_max_tokens=8192,    # AWS_BEDROCK_DEFAULT_MAX_TOKENS (default: 8192)
     aws_access_key_id=None,     # AWS_BEDROCK_ACCESS_KEY_ID
     aws_secret_access_key=None, # AWS_BEDROCK_SECRET_ACCESS_KEY
     aws_session_token=None,     # AWS_BEDROCK_SESSION_TOKEN
+)
+```
+
+### Max Tokens Configuration
+
+The `default_max_tokens` setting provides a fallback when not specified per-request. Different models support different limits:
+
+| Model | Max Output Tokens |
+|-------|-------------------|
+| Claude 4.5 Sonnet | 64K (65,536) |
+| Claude 3.7 Sonnet | 128K (with beta header) |
+| Claude 3.5 Sonnet v2 | 8K (8,192) |
+| Amazon Titan | Varies by model |
+
+**Override Priority** (highest to lowest):
+1. **Per-request**: `ChatOptions(max_tokens=64000)`
+2. **Environment variable**: `AWS_BEDROCK_DEFAULT_MAX_TOKENS=32000`
+3. **Constructor**: `BedrockClient(default_max_tokens=16000)`
+4. **Default fallback**: `8192`
+
+**Example - Using Claude 4.5 Sonnet with higher limits**:
+```python
+from agent_framework import ChatOptions
+
+# Override per-request for models with higher limits
+response = await client.get_response(
+    "Write a detailed analysis...",
+    chat_options=ChatOptions(max_tokens=64000)  # Use full 64K capacity
 )
 ```
 

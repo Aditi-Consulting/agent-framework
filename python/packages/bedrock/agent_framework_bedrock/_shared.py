@@ -5,7 +5,7 @@ from typing import ClassVar, Final
 from agent_framework._pydantic import AFBaseSettings
 from pydantic import SecretStr
 
-BEDROCK_DEFAULT_MAX_TOKENS: Final[int] = 4096
+BEDROCK_DEFAULT_MAX_TOKENS: Final[int] = 8192
 BEDROCK_DEFAULT_REGION: Final[str] = "us-east-1"
 BEDROCK_DEFAULT_ANTHROPIC_VERSION: Final[str] = "bedrock-2023-05-31"
 
@@ -27,7 +27,12 @@ class BedrockSettings(AFBaseSettings):
         session_token: AWS session token for temporary credentials.
         anthropic_api_version: Anthropic API version for Claude models (default: bedrock-2023-05-31).
         use_converse_api: Whether to use Converse API (default: True).
-        default_max_tokens: Default maximum tokens for completions (default: 4096).
+        default_max_tokens: Default maximum tokens for completions (default: 8192).
+            Note: This is a fallback value. Different models support different limits:
+            - Claude 3.5 Sonnet v2: 8,192 tokens
+            - Claude 3.7 Sonnet: up to 128K tokens (with beta header)
+            - Claude 4.5 Sonnet: up to 64K tokens
+            Override per-request via ChatOptions(max_tokens=...) for higher limits.
         env_file_path: If provided, the .env settings are read from this file path location.
         env_file_encoding: The encoding of the .env file, defaults to 'utf-8'.
 
