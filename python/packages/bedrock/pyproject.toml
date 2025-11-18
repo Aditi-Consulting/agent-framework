@@ -24,8 +24,8 @@ classifiers = [
 ]
 dependencies = [
     "agent-framework-core",
-    "boto3>=1.35.0,<2",
-    "botocore>=1.35.0,<2",
+    "boto3>=1.39.12,<2",  # Required for AWS_BEARER_TOKEN_BEDROCK support
+    "botocore>=1.39.12,<2",  # Required for bearer token authentication
 ]
 
 [tool.uv]
