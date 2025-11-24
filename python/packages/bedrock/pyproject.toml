@@ -24,8 +24,9 @@ classifiers = [
 ]
 dependencies = [
     "agent-framework-core",
-    "boto3>=1.40.75,<2",  # Tested and verified with bearer token authentication
-    "botocore>=1.40.75,<2",  # Tested and verified with bearer token authentication
+    # Allow compatibility with agentlightning/litellm while keeping an upper bound below 2.x
+    "boto3>=1.34.34,<2",
+    "botocore>=1.34.34,<2",
 ]
 
 [tool.uv]
